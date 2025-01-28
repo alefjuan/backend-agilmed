@@ -93,6 +93,93 @@ app.get('/specialties', (req, res) => {
   });
 });
 
+
+// Criar um novo agendamento
+app.post('/appointments', (req, res) => {
+  const { date, time, client_id, doctor_id } = req.body;
+
+  if (!date || !time || !client_id || !doctor_id) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
+
+  const query = 'INSERT INTO Appointments (date, time, client_id, doctor_id) VALUES (?, ?, ?, ?)';
+  db.query(query, [date, time, client_id, doctor_id], (err, result) => {
+    if (err) {
+      console.error('Erro ao criar agendamento:', err);
+      return res.status(500).json({ error: 'Erro ao criar agendamento' });
+    }
+    res.status(201).json({ message: 'Agendamento criado com sucesso', id: result.insertId });
+  });
+});
+
+const bcrypt = require('bcrypt'); // Para criptografar a senha
+
+// Criar um novo cliente
+app.post('/clients', async (req, res) => {
+  const { name, email, cpf, password, telephone } = req.body;
+
+  if (!name || !email || !cpf || !password) {
+    return res.status(400).json({ error: 'Nome, email, CPF e senha são obrigatórios' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const query = 'INSERT INTO Clients (name, email, cpf, password, telephone) VALUES (?, ?, ?, ?, ?)';
+    db.query(query, [name, email, cpf, hashedPassword, telephone], (err, result) => {
+      if (err) {
+        console.error('Erro ao criar cliente:', err);
+        return res.status(500).json({ error: 'Erro ao criar cliente' });
+      }
+      res.status(201).json({ message: 'Cliente criado com sucesso', id: result.insertId });
+    });
+  } catch (error) {
+    console.error('Erro ao criptografar senha:', error);
+    res.status(500).json({ error: 'Erro interno ao criar cliente' });
+  }
+});
+
+// Login do cliente
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+  }
+
+  const query = 'SELECT * FROM Clients WHERE email = ?';
+  db.query(query, [email], async (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar cliente:', err);
+      return res.status(500).json({ error: 'Erro ao buscar cliente' });
+    }
+
+    if (results.length === 0) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+
+    const client = results[0];
+
+    // Verifica a senha
+    const passwordMatch = await bcrypt.compare(password, client.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+
+    res.status(200).json({
+      message: 'Login bem-sucedido',
+      client: {
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        cpf: client.cpf,
+        telephone: client.telephone,
+      },
+    });
+  });
+});
+
+
+
 // Iniciar o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
