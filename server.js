@@ -5,7 +5,7 @@ const mysql = require('mysql2');
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors()); // Adicione esta linha
+app.use(cors());
 app.use(express.json());
 
 // Configuração do banco de dados
@@ -177,7 +177,18 @@ app.post('/login', (req, res) => {
     });
   });
 });
-
+app.get('/appointments/client/:client_id', (req, res) => {
+  const { client_id } = req.params;
+  const query = 'SELECT * FROM Appointments WHERE client_id = ?';
+  db.query(query, [client_id], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar agendamentos por ID do cliente:', err);
+      res.status(500).send('Erro ao buscar agendamentos por ID do cliente');
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});
 
 
 // Iniciar o servidor
