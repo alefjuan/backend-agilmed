@@ -93,6 +93,61 @@ app.get('/specialties', (req, res) => {
   });
 });
 
+// Listar especialidades disponíveis em uma clínica específica
+app.get('/clinics/:clinic_id/specialties', (req, res) => {
+  const { clinic_id } = req.params;
+  const query = `
+    SELECT DISTINCT s.id, s.name 
+    FROM Specialties s
+    JOIN Doctors d ON s.id = d.specialty_id
+    WHERE d.clinic_id = ?
+  `;
+
+  db.query(query, [clinic_id], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar especialidades da clínica:', err);
+      res.status(500).json({ error: 'Erro ao buscar especialidades da clínica' });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});
+
+// Listar médicos de uma especialidade específica dentro de uma clínica
+app.get('/clinics/:clinic_id/specialties/:specialty_id/doctors', (req, res) => {
+  const { clinic_id, specialty_id } = req.params;
+  const query = `
+    SELECT id, name 
+    FROM Doctors
+    WHERE clinic_id = ? AND specialty_id = ?
+  `;
+
+  db.query(query, [clinic_id, specialty_id], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar médicos por especialidade na clínica:', err);
+      res.status(500).json({ error: 'Erro ao buscar médicos por especialidade na clínica' });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});
+
+// Rota para excluir um agendamento
+app.delete('/appointments/:id', (req, res) => {
+  const appointmentId = req.params.id;
+  const query = 'DELETE FROM Appointments WHERE id = ?';
+  
+  db.query(query, [appointmentId], (err, result) => {
+    if (err) {
+      console.error('Erro ao excluir agendamento:', err);
+      res.status(500).json({ error: 'Erro ao excluir agendamento' });
+    } else if (result.affectedRows === 0) {
+      res.status(404).json({ message: 'Agendamento não encontrado' });
+    } else {
+      res.status(200).json({ message: 'Agendamento excluído com sucesso' });
+    }
+  });
+});
 
 // Criar um novo agendamento
 app.post('/appointments', (req, res) => {
@@ -177,6 +232,7 @@ app.post('/login', (req, res) => {
     });
   });
 });
+
 app.get('/appointments/client/:client_id', (req, res) => {
   const { client_id } = req.params;
   const query = 'SELECT * FROM Appointments WHERE client_id = ?';
@@ -188,53 +244,6 @@ app.get('/appointments/client/:client_id', (req, res) => {
       res.status(200).json(results);
     }
   });
-});
-// Listar especialidades disponíveis em uma clínica específica
-app.get('/clinics/:clinic_id/specialties', (req, res) => {
-  const { clinic_id } = req.params;
-  const query = `
-    SELECT DISTINCT s.id, s.name 
-    FROM Specialties s
-    JOIN Doctors d ON s.id = d.specialty_id
-    WHERE d.clinic_id = ?
-  `;
-
-  db.query(query, [clinic_id], (err, results) => {
-    if (err) {
-      console.error('Erro ao buscar especialidades da clínica:', err);
-      res.status(500).json({ error: 'Erro ao buscar especialidades da clínica' });
-    } else {
-      res.status(200).json(results);
-    }
-  });
-});
-
-// Listar médicos de uma especialidade específica dentro de uma clínica
-app.get('/clinics/:clinic_id/specialties/:specialty_id/doctors', (req, res) => {
-  const { clinic_id, specialty_id } = req.params;
-  const query = `
-    SELECT id, name 
-    FROM Doctors
-    WHERE clinic_id = ? AND specialty_id = ?
-  `;
-
-  db.query(query, [clinic_id, specialty_id], (err, results) => {
-    if (err) {
-      console.error('Erro ao buscar médicos por especialidade na clínica:', err);
-      res.status(500).json({ error: 'Erro ao buscar médicos por especialidade na clínica' });
-    } else {
-      res.status(200).json(results);
-    }
-  });
-});
-router.delete('/appointments/:id', async (req, res) => {
-  try {
-    const appointmentId = req.params.id;
-    await Appointment.destroy({ where: { id: appointmentId } });
-    res.status(200).json({ message: 'Agendamento excluído com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao excluir agendamento' });
-  }
 });
 
 // Iniciar o servidor
