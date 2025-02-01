@@ -235,7 +235,25 @@ app.post('/login', (req, res) => {
 
 app.get('/appointments/client/:client_id', (req, res) => {
   const { client_id } = req.params;
-  const query = 'SELECT * FROM Appointments WHERE client_id = ?';
+  const query = `
+    SELECT 
+      a.id, 
+      a.date, 
+      a.time, 
+      c.name AS clinic_name, 
+      s.name AS specialty_name, 
+      d.name AS doctor_name
+    FROM 
+      Appointments a
+    JOIN 
+      Doctors d ON a.doctor_id = d.id
+    JOIN 
+      Clinics c ON d.clinic_id = c.id
+    JOIN 
+      Specialties s ON d.specialty_id = s.id
+    WHERE 
+      a.client_id = ?
+  `;
   db.query(query, [client_id], (err, results) => {
     if (err) {
       console.error('Erro ao buscar agendamentos por ID do cliente:', err);
