@@ -264,6 +264,29 @@ app.get('/appointments/client/:client_id', (req, res) => {
   });
 });
 
+app.get('/doctors/:doctor_id/available_times', (req, res) => {
+  const { doctor_id } = req.params;
+  const { date } = req.query;
+
+  const query = `
+    SELECT time 
+    FROM Appointments 
+    WHERE doctor_id = ? AND date = ?
+  `;
+  db.query(query, [doctor_id, date], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar horários disponíveis:', err);
+      res.status(500).send('Erro ao buscar horários disponíveis');
+    } else {
+      const bookedTimes = results.map(result => result.time);
+      const allTimes = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"];
+      const availableTimes = allTimes.filter(time => !bookedTimes.includes(time));
+      res.status(200).json(availableTimes);
+    }
+  });
+});
+
+
 // Iniciar o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
