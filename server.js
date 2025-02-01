@@ -286,6 +286,27 @@ app.get('/doctors/:doctor_id/available_times', (req, res) => {
   });
 });
 
+app.put('/appointments/:id', (req, res) => {
+  const appointmentId = req.params.id;
+  const { date, time, doctor_id } = req.body;
+
+  if (!date || !time || !doctor_id) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
+
+  const query = 'UPDATE Appointments SET date = ?, time = ?, doctor_id = ? WHERE id = ?';
+  db.query(query, [date, time, doctor_id, appointmentId], (err, result) => {
+    if (err) {
+      console.error('Erro ao atualizar agendamento:', err);
+      res.status(500).json({ error: 'Erro ao atualizar agendamento' });
+    } else if (result.affectedRows === 0) {
+      res.status(404).json({ message: 'Agendamento não encontrado' });
+    } else {
+      res.status(200).json({ message: 'Agendamento atualizado com sucesso' });
+    }
+  });
+});
+
 
 // Iniciar o servidor
 app.listen(port, () => {
